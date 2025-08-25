@@ -33,10 +33,11 @@ class ItineraryItem(models.Model):
 
 
 class Image(models.Model):
-    url = models.URLField()
+    # به جای URLField از ImageField استفاده می‌کنیم
+    file = models.ImageField(upload_to="tours/images/")
 
     def __str__(self):
-        return self.url
+        return self.file.url if self.file else "No Image"
 
 
 class Tour(models.Model):
