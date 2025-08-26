@@ -1,9 +1,9 @@
-from ..models import TourChunk
+from ..models import Chunk
 
 def create_and_save_chunks(instance):
 
     # اول همه چانک‌های قبلی رو پاک کن تا بروز بشه
-    TourChunk.objects.filter(tour=instance).delete()
+    Chunk.objects.filter(tour=instance).delete()
 
     tour = instance
     chunks = []
@@ -44,7 +44,7 @@ def create_and_save_chunks(instance):
 
     # --- ذخیره‌سازی در دیتابیس ---
     for chunk_type, text in chunks:
-        TourChunk.objects.create(tour=tour, chunk_type=chunk_type, text=text)
+        Chunk.objects.create(tour=tour, chunk_type=chunk_type, text=text)
 
     return chunks
 

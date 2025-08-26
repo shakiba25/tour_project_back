@@ -120,14 +120,21 @@ def validate_images(value):
         raise ValidationError("images باید لیستی از URLها باشه.")
 
 
-
-class TourChunk(models.Model):
-    tour = models.ForeignKey("Tour", on_delete=models.CASCADE, related_name="chunks")
+class Chunk(models.Model):
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="chunks")
     chunk_type = models.CharField(max_length=50)
     text = models.TextField()
 
-    def __str__(self):
-        return f"{self.tour.name} - {self.chunk_type}"
+
+
+
+# class TourChunk(models.Model):
+#     tour = models.ForeignKey("Tour", on_delete=models.CASCADE, related_name="chunks")
+#     chunk_type = models.CharField(max_length=50)
+#     text = models.TextField()
+
+#     def __str__(self):
+#         return f"{self.tour.name} - {self.chunk_type}"
     
     
 
