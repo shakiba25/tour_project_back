@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image 
+from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , TourChunk
+
+admin.site.register(TourChunk)
 
 class ImageInline(admin.TabularInline):  # یا StackedInline برای ظاهر ستونی
     model = Tour.images.through          # چون ManyToMany هست
