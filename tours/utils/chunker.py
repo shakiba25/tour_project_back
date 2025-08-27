@@ -9,13 +9,13 @@ def create_and_save_chunks(instance):
     chunks = []
 
     combined_name = f"{tour.name} ({tour.destination})"
-
+    
     # --- اطلاعات کلی ---
     general_text = (
         f"{combined_name} یک تور {tour.duration_days} روزه به مقصد {tour.destination} است "
         f"که با قیمت {tour.price} تومان ارائه می‌شود. "
-        f"پرواز رفت در تاریخ {tour.departure.date} ساعت {tour.departure.time} توسط ایرلاین  "
-        f"{tour.departure.airline} انجام می‌شود و بازگشت در تاریخ {tour.return_info.date} "
+        f"پرواز رفت در تاریخ {tour.departure.date_jalali.strftime('%d-%m-%Y')} ساعت {tour.departure.time} توسط ایرلاین  "
+        f"{tour.departure.airline} انجام می‌شود و بازگشت در تاریخ {tour.return_info.date_jalali.strftime('%d-%m-%Y')} "
         f"ساعت {tour.return_info.time} توسط ایرلاین {tour.return_info.airline} خواهد بود. "
         f"اقامت در هتل {tour.hotel.name} ستاره{tour.hotel.star} می‌باشد."
     )

@@ -4,7 +4,7 @@ import jdatetime
 
 
 # ✅ ثبت مدل‌های Chunk و ChunkEmbedding به صورت امن
-for model in [Chunk, ChunkEmbedding]:
+for model in [Chunk]:
     try:
         admin.site.register(model)
     except admin.sites.AlreadyRegistered:
@@ -83,3 +83,24 @@ class FlightInfoAdmin(admin.ModelAdmin):
     departure_shamsi.short_description = "تاریخ شمسی"
 
 admin.site.register(FlightInfo, FlightInfoAdmin)
+
+
+import numpy as np
+import io
+
+@admin.register(ChunkEmbedding)
+class ChunkEmbeddingAdmin(admin.ModelAdmin):
+    list_display = ('id', 'chunk', 'vector_preview')  # نمایش فیلد خلاصه وکتور
+
+    def vector_preview(self, obj):
+        import numpy as np
+
+        try:
+            # فرض می‌کنیم dtype و شکل آرایه مشخصه؛ مثلا float32 و طول 300
+            vector = np.frombuffer(obj.vector, dtype=np.float32)
+            return str(vector[:5]) + '...'
+        except Exception as e:
+            return f'خطا: {e}'
+
+
+    vector_preview.short_description = 'پیش‌نمایش وکتور'
