@@ -8,7 +8,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "travelproj.settings")
 import django
 django.setup()
 
-
+import jdatetime
 import datetime
 import json
 import re
@@ -48,7 +48,7 @@ def build_prompt(user_query: str) -> str:
 
 قوانین:
 - فقط شهر های رسمی به عنوان مقصد
-- تاریخ شمسی همانطور که گفته شده (yyyy-mm-dd)
+- تاریخ شمسی را فقط به صورت متن همان‌طور که گفته شده به این فرمت (yyyy-mm-dd) بازگردان (مثلاً "1404-06-20") و تبدیل به میلادی نکن. و هر قسمتی از تاریخ که مشخص نبود را ماه و سال جاری شمسی1404  را برگردان. 
 - اگر چیزی نبود مقدار آن null
 - برای "گرون‌ترین"، مقدار high را "max"
 - برای "ارزان‌ترین"، مقدار low را "min"
@@ -105,15 +105,26 @@ def get_chunks_for_query(user_query: str):
     if dest_type:
         qs = qs.filter(destination_type=dest_type)
 
-    # تاریخ
+    # تاریخ شمسی -> میلادی
     start_date_str = filters.get("departure_date", {}).get("start")
     end_date_str = filters.get("departure_date", {}).get("end")
+
     if start_date_str:
-        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        qs = qs.filter(departure__date__gte=start_date)
+        try:
+            jy, jm, jd = map(int, start_date_str.split("-"))
+            start_date = jdatetime.date(jy, jm, jd).togregorian()
+            qs = qs.filter(departure__date__gte=start_date)
+        except Exception as e:
+            print("❌ خطا در تبدیل تاریخ شمسی به میلادی (start):", e)
+
     if end_date_str:
-        end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        qs = qs.filter(departure__date__lte=end_date)
+        try:
+            jy, jm, jd = map(int, end_date_str.split("-"))
+            end_date = jdatetime.date(jy, jm, jd).togregorian()
+            qs = qs.filter(departure__date__lte=end_date)
+        except Exception as e:
+            print("❌ خطا در تبدیل تاریخ شمسی به میلادی (end):", e)
+
 
     # گرون‌ترین / ارزان‌ترین
     price_low = filters.get("price", {}).get("low")
@@ -142,9 +153,10 @@ def get_chunks_for_query(user_query: str):
 
 # --------------------- مثال استفاده --------------------- #
 if __name__ == "__main__":
-    query = "ی تور میخوام  قیمتش بالای 2300 باشه و بین6 تا 7 شب هم باشه بیمه هم داشته باشه یا نداشته باشه مهم نیست ولی حتما خارجی باشه"
+    query = "  از 9 آذر تا 20 آدر ی تور میخوام  قیمتش بالای 2300 باشه و بین6 تا 7 شب هم باشه بیمه هم داشته باشه یا نداشته باشه مهم نیست ولی حتما خارجی باشه"
     # query = "گرون ترین  تور دبی"
     # query = " تور دبی"
+    query = "نزدیک ترین تاریخ تور رو بده بهم"
     tours, chunks = get_chunks_for_query(query)
 
     print("🏷 تورهای فیلتر شده:")
