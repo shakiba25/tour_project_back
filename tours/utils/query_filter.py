@@ -38,7 +38,7 @@ def build_prompt(user_query: str) -> str:
   "filters": {
     "price": {"low": ..., "high": ...},
     "duration_days": {"low": ..., "high": ...},
-    "departure_date": {"start": "...", "end": "..."},
+    "departure_date": {"start": "...", "end": "..." , "special": "nearest"  // یا "farthest" یا // null},
     "insurance_included": true | false | null,
     "services": [ ... ],
     "destination": "...",
@@ -125,7 +125,18 @@ def get_chunks_for_query(user_query: str):
         except Exception as e:
             print("❌ خطا در تبدیل تاریخ شمسی به میلادی (end):", e)
 
+    # قوانین نزدیک‌ترین / دورترین
+    date_special = filters.get("departure_date", {}).get("special")  # new field: "nearest" | "farthest" | None
 
+    if date_special == "nearest" and qs.exists():
+        min_date = qs.order_by("departure__date").first().departure.date
+        qs = qs.filter(departure__date=min_date)
+    elif date_special == "farthest" and qs.exists():
+        max_date = qs.order_by("-departure__date").first().departure.date
+        qs = qs.filter(departure__date=max_date)
+    else:
+        pass        
+    
     # گرون‌ترین / ارزان‌ترین
     price_low = filters.get("price", {}).get("low")
     price_high = filters.get("price", {}).get("high")
