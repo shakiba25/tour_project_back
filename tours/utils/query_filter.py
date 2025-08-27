@@ -1,0 +1,156 @@
+import sys
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(BASE_DIR)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "travelproj.settings")
+
+import django
+django.setup()
+
+
+import datetime
+import json
+import re
+import openai
+from tours.models import Tour, Chunk
+
+# --------------------- تنظیم OpenAI --------------------- #
+openai.api_key = "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"  # <<-- کلیدت اینجا
+openai.api_base = "https://openrouter.ai/api/v1"
+
+model = "qwen/qwen3-235b-a22b:free"  # محشرهههه
+# model = "openrouter/horizon-beta" # اینم عالیه
+# model = "deepseek/deepseek-r1-0528:free"
+# model = "z-ai/glm-4.5-air:free"
+model = "moonshotai/kimi-k2:free"
+# model = "google/gemma-3n-e4b-it:free"
+
+# --------------------- پرامپت --------------------- #
+def build_prompt(user_query: str) -> str:
+    prompt = """
+شما یک سیستم NLP هستید که وظیفه دارد از سوالات کاربر درباره تورهای مسافرتی، فیلترهای ساختاریافته استخراج کند.
+فقط خروجی را به صورت JSON معتبر ارائه بده. هیچ توضیح اضافه‌ای ننویس.
+ساختار فیلترها به صورت زیر است:
+
+{
+  "intent": "find_tour_with_conditions",
+  "filters": {
+    "price": {"low": ..., "high": ...},
+    "duration_days": {"low": ..., "high": ...},
+    "departure_date": {"start": "...", "end": "..."},
+    "insurance_included": true | false | null,
+    "services": [ ... ],
+    "destination": "...",
+    "destination_type" : "داخلی | null | خارجی"
+  }
+}
+
+قوانین:
+- فقط شهر های رسمی به عنوان مقصد
+- تاریخ شمسی همانطور که گفته شده (yyyy-mm-dd)
+- اگر چیزی نبود مقدار آن null
+- برای "گرون‌ترین"، مقدار high را "max"
+- برای "ارزان‌ترین"، مقدار low را "min"
+"""
+    prompt += f"\nسوال: {user_query}\n"
+    return prompt
+
+def extract_json(text: str) -> dict:
+    try:
+        match = re.search(r'{.*}', text, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        return {}
+    except Exception as e:
+        print("خطا در استخراج JSON:", e)
+        return {}
+
+# --------------------- تابع اصلی --------------------- #
+def get_chunks_for_query(user_query: str):
+    # --- 1. استخراج فیلترها با NLP ---
+    prompt_fa = build_prompt(user_query)
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt_fa}]
+    )
+    res_json_text = response.choices[0].message["content"]
+    parsed_json = extract_json(res_json_text)
+    filters = parsed_json.get("filters", {})
+    print(filters)
+
+    # --- 2. اعمال فیلتر روی مدل‌های Django ---
+    qs = Tour.objects.all()
+
+    # مدت زمان
+    duration_low = filters.get("duration_days", {}).get("low")
+    duration_high = filters.get("duration_days", {}).get("high")
+    if duration_low is not None:
+        qs = qs.filter(duration_days__gte=duration_low)
+    if duration_high is not None:
+        qs = qs.filter(duration_days__lte=duration_high)
+
+    # بیمه
+    insurance = filters.get("insurance_included")
+    if insurance is not None:
+        qs = qs.filter(insurance_included=insurance)
+
+    # مقصد
+    destination = filters.get("destination")
+    if destination:
+        qs = qs.filter(destination=destination)
+
+    # نوع مقصد
+    dest_type = filters.get("destination_type")
+    if dest_type:
+        qs = qs.filter(destination_type=dest_type)
+
+    # تاریخ
+    start_date_str = filters.get("departure_date", {}).get("start")
+    end_date_str = filters.get("departure_date", {}).get("end")
+    if start_date_str:
+        start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        qs = qs.filter(departure__date__gte=start_date)
+    if end_date_str:
+        end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        qs = qs.filter(departure__date__lte=end_date)
+
+    # گرون‌ترین / ارزان‌ترین
+    price_low = filters.get("price", {}).get("low")
+    price_high = filters.get("price", {}).get("high")
+    if price_low == "min":
+        min_price = qs.order_by("price").first().price if qs.exists() else None
+        if min_price:
+            qs = qs.filter(price=min_price)
+    elif price_high == "max":
+        max_price = qs.order_by("-price").first().price if qs.exists() else None
+        if max_price:
+            qs = qs.filter(price=max_price)
+    else:
+        if price_low is not None:
+            qs = qs.filter(price__gte=price_low)
+        if price_high is not None:
+            qs = qs.filter(price__lte=price_high)
+
+    filtered_tours = list(qs)
+    filtered_tour_ids = [t.id for t in filtered_tours]
+
+    # --- 3. گرفتن چانک‌های مرتبط ---
+    filtered_chunks = Chunk.objects.filter(tour__id__in=filtered_tour_ids)
+
+    return filtered_tours, filtered_chunks
+
+# --------------------- مثال استفاده --------------------- #
+if __name__ == "__main__":
+    query = "ی تور میخوام  قیمتش بالای 2300 باشه و بین6 تا 7 شب هم باشه بیمه هم داشته باشه یا نداشته باشه مهم نیست ولی حتما خارجی باشه"
+    # query = "گرون ترین  تور دبی"
+    # query = " تور دبی"
+    tours, chunks = get_chunks_for_query(query)
+
+    print("🏷 تورهای فیلتر شده:")
+    for t in tours:
+        print("-", t.name)
+
+    print("\n📝 چانک‌های مرتبط:")
+    for c in chunks:
+        print("-", c.text)

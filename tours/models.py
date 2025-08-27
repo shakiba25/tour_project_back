@@ -1,4 +1,5 @@
 from django.db import models
+import jdatetime
 
 
 class Hotel(models.Model):
@@ -16,7 +17,18 @@ class FlightInfo(models.Model):
 
     def __str__(self):
         return f"{self.airline} - {self.date} {self.time}"
+    
+    @property
+    def date_jalali(self):
+        """تاریخ شمسی"""
+        return jdatetime.date.fromgregorian(date=self.date)
 
+    @property
+    def datetime_jalali(self):
+        """تاریخ و زمان شمسی"""
+        from datetime import datetime
+        dt = datetime.combine(self.date, self.time)
+        return jdatetime.datetime.fromgregorian(datetime=dt)
 
 class Service(models.Model):
     name = models.CharField(max_length=200)
