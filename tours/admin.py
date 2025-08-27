@@ -1,7 +1,13 @@
 from django.contrib import admin
-from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk
+from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk , ChunkEmbedding
 
-admin.site.register(Chunk)
+# ✅ ثبت مدل‌های Chunk و ChunkEmbedding به صورت امن
+for model in [Chunk, ChunkEmbedding]:
+    try:
+        admin.site.register(model)
+    except admin.sites.AlreadyRegistered:
+        pass
+
 
 class ImageInline(admin.TabularInline):  # یا StackedInline برای ظاهر ستونی
     model = Tour.images.through          # چون ManyToMany هست

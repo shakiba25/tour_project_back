@@ -124,7 +124,11 @@ class Chunk(models.Model):
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="chunks")
     chunk_type = models.CharField(max_length=50)
     text = models.TextField()
-
+    
+    
+class ChunkEmbedding(models.Model):
+    chunk = models.OneToOneField(Chunk, on_delete=models.CASCADE, related_name="embedding")
+    vector = models.BinaryField()  # ذخیره‌سازی باینری numpy (faiss-compatible)
 
 
 
