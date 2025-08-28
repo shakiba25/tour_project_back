@@ -19,13 +19,15 @@ from tours.models import Tour, Chunk
 openai.api_key = "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"  # <<-- کلیدت اینجا
 openai.api_base = "https://openrouter.ai/api/v1"
 
-model = "qwen/qwen3-235b-a22b:free"  # محشرهههه
+
+# model = "qwen/qwen3-235b-a22b:free"  # محشرهههه
 # model = "openrouter/horizon-beta" # اینم عالیه
 # model = "deepseek/deepseek-r1-0528:free"
 # model = "z-ai/glm-4.5-air:free"
-model = "moonshotai/kimi-k2:free"
 # model = "google/gemma-3n-e4b-it:free"
+# model = "mistralai/mistral-7b-instruct"
 
+model = "moonshotai/kimi-k2:free"
 # --------------------- پرامپت --------------------- #
 def build_prompt(user_query: str) -> str:
     prompt = """
@@ -49,7 +51,6 @@ def build_prompt(user_query: str) -> str:
 قوانین:
 - فقط شهر های رسمی به عنوان مقصد
 - تاریخ شمسی را فقط به صورت متن همان‌طور که گفته شده به این فرمت (yyyy-mm-dd) بازگردان (مثلاً "1404-06-20") و تبدیل به میلادی نکن. و هر قسمتی از تاریخ که مشخص نبود را ماه و سال جاری شمسی1404  را برگردان. 
-- اگر چیزی نبود مقدار آن null
 - برای "گرون‌ترین"، مقدار high را "max"
 - برای "ارزان‌ترین"، مقدار low را "min"
 """
@@ -83,8 +84,9 @@ def get_chunks_for_query(user_query: str):
     qs = Tour.objects.all()
 
     # مدت زمان
-    duration_low = filters.get("duration_days", {}).get("low")
-    duration_high = filters.get("duration_days", {}).get("high")
+    duration_filter = filters.get("duration_days") or {}
+    duration_low = duration_filter.get("low")
+    duration_high = duration_filter.get("high")
     if duration_low is not None:
         qs = qs.filter(duration_days__gte=duration_low)
     if duration_high is not None:
@@ -138,8 +140,9 @@ def get_chunks_for_query(user_query: str):
         pass        
     
     # گرون‌ترین / ارزان‌ترین
-    price_low = filters.get("price", {}).get("low")
-    price_high = filters.get("price", {}).get("high")
+    price_filter = filters.get("price") or {}
+    price_low = price_filter.get("low")
+    price_high = price_filter.get("high")
     if price_low == "min":
         min_price = qs.order_by("price").first().price if qs.exists() else None
         if min_price:
@@ -167,7 +170,7 @@ if __name__ == "__main__":
     query = "  از 9 آذر تا 20 آدر ی تور میخوام  قیمتش بالای 2300 باشه و بین6 تا 7 شب هم باشه بیمه هم داشته باشه یا نداشته باشه مهم نیست ولی حتما خارجی باشه"
     # query = "گرون ترین  تور دبی"
     # query = " تور دبی"
-    query = "نزدیک ترین تاریخ تور رو بده بهم"
+    # query = "نزدیک ترین تاریخ تور رو بده بهم"
     tours, chunks = get_chunks_for_query(query)
 
     print("🏷 تورهای فیلتر شده:")
