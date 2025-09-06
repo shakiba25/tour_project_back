@@ -6,7 +6,7 @@ import tours
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("/", include("tours.urls")),
+    path("api/", include("tours.urls")),
 ]
 
 

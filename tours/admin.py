@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk , ChunkEmbedding
+from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk , ChunkEmbedding , ChatMessage , ChatSession
 import jdatetime
 
 
@@ -104,3 +104,18 @@ class ChunkEmbeddingAdmin(admin.ModelAdmin):
 
 
     vector_preview.short_description = 'پیش‌نمایش وکتور'
+    
+class ChatMessageInline(admin.TabularInline):
+    model = ChatMessage
+    extra = 0  # تعداد فرم‌های اضافه برای اضافه کردن پیام جدید، صفر یعنی نشون نمیده
+
+@admin.register(ChatSession)
+class ChatSessionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'created_at', 'is_active')
+    inlines = [ChatMessageInline]
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ('session', 'role', 'content', 'created_at')
+    list_filter = ('role',)
+    search_fields = ('content',)  

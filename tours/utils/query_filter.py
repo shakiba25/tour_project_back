@@ -67,6 +67,26 @@ def extract_json(text: str) -> dict:
         print("خطا در استخراج JSON:", e)
         return {}
 
+
+#----------------------------------sfae answer
+def safe_get_answer(response):
+    """
+    گرفتن متن جواب از خروجی مدل به صورت ایمن.
+    هم با OpenAI و هم با OpenRouter سازگاره.
+    """
+    if isinstance(response, dict):  # بعضی وقتا JSON ساده میاد
+        if "choices" in response:
+            return response["choices"][0]["message"]["content"]
+        elif "error" in response:
+            return f"❌ خطا: {response['error'].get('message', 'Unknown')}"
+        else:
+            return f"⚠️ پاسخ غیرمنتظره: {response}"
+    try:
+        return response.choices[0].message["content"]
+    except Exception as e:
+        return f"⚠️ خطا در خواندن پاسخ: {str(e)}"
+
+
 # --------------------- تابع اصلی --------------------- #
 def get_chunks_for_query(user_query: str):
     # --- 1. استخراج فیلترها با NLP ---
@@ -75,7 +95,9 @@ def get_chunks_for_query(user_query: str):
         model=model,
         messages=[{"role": "user", "content": prompt_fa}]
     )
-    res_json_text = response.choices[0].message["content"]
+    
+    res_json_text = safe_get_answer(response)
+    # res_json_text = response.choices[0].message["content"]
     parsed_json = extract_json(res_json_text)
     filters = parsed_json.get("filters", {})
     print(filters)

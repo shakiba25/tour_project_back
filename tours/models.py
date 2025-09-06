@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 import jdatetime
 
 
@@ -141,6 +142,30 @@ class Chunk(models.Model):
 class ChunkEmbedding(models.Model):
     chunk = models.OneToOneField(Chunk, on_delete=models.CASCADE, related_name="embedding")
     vector = models.BinaryField()  # ذخیره‌سازی باینری numpy (faiss-compatible)
+
+
+#--------------------------- ChatBot
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)  # برای تشخیص چت باز فعلی
+
+    def __str__(self):
+        return f"Chat {self.id} - {self.user or 'Guest'}"
+
+
+class ChatMessage(models.Model):
+    ROLE_CHOICES = [
+        ("user", "User"),
+        ("assistant", "Assistant"),
+    ]
+    session = models.ForeignKey(ChatSession, related_name="messages", on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:30]}"
 
 
 
