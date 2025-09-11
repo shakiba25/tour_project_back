@@ -16,6 +16,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from tours.models import Chunk, ChunkEmbedding
+# from load_model import model
 
 MODEL_PATH = r"C:\Users\Asus\Desktop\test t5\models\xmaniimaux-gte-persian-v3-fp16"
 INDEX_PATH = "tour_chunks_xmaniimaux_v3.faiss"

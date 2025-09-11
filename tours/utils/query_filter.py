@@ -174,11 +174,11 @@ def get_chunks_for_query(user_query: str):
         if max_price:
             qs = qs.filter(price=max_price)
     else:
-        if price_low is not None:
-            qs = qs.filter(price__gte=price_low)
-        if price_high is not None:
-            qs = qs.filter(price__lte=price_high)
+        if price_low not in [None, "", "null"]:
+            qs = qs.filter(price__gte=int(price_low))
 
+        if price_high not in [None, "", "null"]:
+            qs = qs.filter(price__lte=int(price_high))
     filtered_tours = list(qs)
     filtered_tour_ids = [t.id for t in filtered_tours]
 

@@ -8,11 +8,14 @@ import openai
 
 # MODEL = "qwen/qwen3-235b-a22b:free"  # یا هر مدلی که استفاده می‌کنید
 # MODEL = "google/gemini-2.0-flash-exp:free"
-MODEL = "microsoft/mai-ds-r1:free" #خیلی 
+
 # MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1:free" #بد 
 MODEL = "moonshotai/kimi-dev-72b:free" #خوب
 # MODEL = "nousresearch/deephermes-3-llama-3-8b-preview:free"
-MODEL = "google/gemma-3-27b-it:free"  #خیلی 
+MODEL = "google/gemma-3-27b-it:free"  #خیلی  اینه اونی که اصلیه
+# MODEL = "tngtech/deepseek-r1t2-chimera:free"  #خوب
+MODEL = "microsoft/mai-ds-r1:free" # / خرراب / خیلی 
+MODEL = "google/gemma-3n-e4b-it:free"
 
 openai.api_key = "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"
 openai.api_base = "https://openrouter.ai/api/v1" 

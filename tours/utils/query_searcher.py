@@ -15,7 +15,9 @@ from sentence_transformers import SentenceTransformer
 from tours.utils.embedder import MODEL_PATH
 from tours.utils.index_manager import load_faiss_index
 from tours.models import Chunk
+# from model_embedder import get_model
 
+# model = get_model()
 model = SentenceTransformer(MODEL_PATH, trust_remote_code=True)
 
 def search_tour_chunks(query, top_k=5):

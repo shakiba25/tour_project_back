@@ -1,9 +1,9 @@
-from rest_framework.views import APIView
+from rest_framework.views import APIView 
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from .models import ChatSession, ChatMessage
-from .serializers import ChatSessionSerializer, MessageSerializer
+from .models import ChatSession, ChatMessage , Tour
+from .serializers import ChatSessionSerializer, MessageSerializer , TourSerializer
 from tours.utils.chat_logic import generate_assistant_response
 
 
@@ -89,3 +89,60 @@ class ChatMessageAPIView(APIView):
         
         
         
+class DestinationListAPIView(APIView):
+    def get(self, request):
+        destinations = Tour.objects.values("destination", "destination_type").distinct()
+        return Response(destinations, status=status.HTTP_200_OK)        
+    
+    
+    
+
+class FilteredTourListAPIView(APIView):
+    def get(self, request):
+        destination_type = request.GET.get("destination_type")
+        destination = request.GET.get("destination")
+        departure_date = request.GET.get("departure_date")
+        return_date = request.GET.get("return_date")
+        nights = request.GET.get("nights")
+
+        tours = Tour.objects.all()
+
+        if destination_type:
+            tours = tours.filter(destination_type=destination_type)
+
+        if destination:
+            tours = tours.filter(destination__icontains=destination)
+
+        if departure_date:
+            tours = tours.filter(departure__date=departure_date)
+
+        if return_date:
+            tours = tours.filter(return_info__date=return_date)
+
+        if nights:
+            try:
+                nights_int = int(nights)
+                tours = tours.filter(duration_days=nights_int)
+            except ValueError:
+                pass  # نادیده بگیر اگه عدد نبود
+
+        serializer = TourSerializer(tours, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)    
+    
+    
+class TourDetailAPIView(APIView):
+    def get(self, request, id):
+        # print("\n \n {id} \n \n")
+        
+        # tour = Tour.objects.filter(tour_id='tour_001').first()
+        # print(TourSerializer(tour).data)
+        # return Response(status=status.HTTP_200_OK) 
+
+        
+        
+        tour = Tour.objects.filter(tour_id=id).first()
+        if not tour:
+            return Response({"error": "تور پیدا نشد"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TourSerializer(tour)
+        return Response(serializer.data, status=status.HTTP_200_OK)  
