@@ -2,20 +2,27 @@
 import traceback
 from tours.utils.query_searcher import search_tour_chunks
 from tours.utils.query_filter import get_chunks_for_query, safe_get_answer
+from tours.utils.rewrite_prompt import rewrite_query_with_context
+
 import openai
 # from django.conf import settings
+
+MODEL = "google/gemma-3-27b-it:free"  #خیلی  اینه اونی که اصلیه
+# MODEL = "google/gemma-3n-e4b-it:free"
 
 
 # MODEL = "qwen/qwen3-235b-a22b:free"  # یا هر مدلی که استفاده می‌کنید
 # MODEL = "google/gemini-2.0-flash-exp:free"
 
 # MODEL = "nvidia/llama-3.1-nemotron-ultra-253b-v1:free" #بد 
-MODEL = "moonshotai/kimi-dev-72b:free" #خوب
+# MODEL = "moonshotai/kimi-dev-72b:free" #خوب
 # MODEL = "nousresearch/deephermes-3-llama-3-8b-preview:free"
-MODEL = "google/gemma-3-27b-it:free"  #خیلی  اینه اونی که اصلیه
+# MODEL = "google/gemma-3-27b-it:free"  #خیلی  اینه اونی که اصلیه
 # MODEL = "tngtech/deepseek-r1t2-chimera:free"  #خوب
-MODEL = "microsoft/mai-ds-r1:free" # / خرراب / خیلی 
-MODEL = "google/gemma-3n-e4b-it:free"
+# MODEL = "microsoft/mai-ds-r1:free" # / خرراب / خیلی 
+# MODEL = "meta-llama/llama-3.3-8b-instruct:free"
+# MODEL = "qwen/qwen3-8b:free"
+
 
 openai.api_key = "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"
 openai.api_base = "https://openrouter.ai/api/v1" 
@@ -30,14 +37,29 @@ def generate_assistant_response(chat_session, user_content):
     # تاریخچه گفتگو
     history = [f"{msg.role}: {msg.content}" for msg in chat_session.messages.all()]
 
+    # بازنویسی سوال فقط اگر هیستوری وجود داشته باشد
+    # rewritten_query = user_content
+    if history:
+        rewritten_query = rewrite_query_with_context(
+            user_content=user_content,
+            history=history,
+            use_model=True  # اگه می‌خوای بدون GPT باشه بذار False
+        )
+    else:
+        rewritten_query = user_content
+    
+# ============================================== user_content => rewritten_query
+    print(f"\n \n $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n\n {rewritten_query} \n\n")
+
+# ==============================
     # فیلتر و جستجوی تورها
-    filtered_chunks = get_chunks_for_query(user_content)
+    filtered_tours , filtered_chunks = get_chunks_for_query(rewritten_query)  # اینجا
     # filtered_chunks = []
 
     print("------------------------------filtered_chunks---------------------------")    
     print(filtered_chunks)    
     
-    retrieved = search_tour_chunks(user_content, top_k=5)
+    retrieved = search_tour_chunks(rewritten_query, top_k=5)      # اینجا
 
     print("------------------------------retrieved---------------------------")    
     print(retrieved)    
@@ -64,7 +86,10 @@ def generate_assistant_response(chat_session, user_content):
 
     prompt += f"\n❓ سوال جدید کاربر: {user_content}\n"
     prompt += " به صورت طبیعی و روان جواب بده، مثل یک دستیار سفر. جواب رو کوتاه و ساده نگه دار تا به محدودیت توکن نخوری. اگر تور خاصی هست اسمشو بیار."
-    # prompt += " </think> را حذف کن از پاسخت و فارسی پاسخ بده"
+    # prompt += " اگر درباره ی جزییات یک تور پرسید تو تمام جزییات آن را(قیمت-هزینه-تاریخ و ساعت رفت و برگشت) بگو اگر اطلاعاتی نداشتی نگو اسم آن اطلاعات را "
+    prompt += " اگر درباره ی جزییات یک تور پرسید تو تمام جزییات آن را(قیمت-هزینه-تاریخ و ساعت رفت و برگشت) بگو  "
+    # prompt += " در تبدیل ماه تاریخ ها دقت کن ، ماه ها شمسی هستند مثلا YYYY/06/DD یعنی شهریور"
+    prompt += " لطفا تاریخ‌ها را دقیقاً مثل این قالب (YYYY/MM/DD) نمایش بده و تبدیل به متن نکن."  
     print("------------------------------prompt---------------------------")    
     print(prompt)    
     
