@@ -9,29 +9,25 @@ import django
 django.setup()
 
 
-import openai
+# api_key="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"  
 
 
-# --------------------- تنظیم OpenAI --------------------- #
-openai.api_key = "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"  # <<-- کلیدت اینجا
-openai.api_base = "https://openrouter.ai/api/v1"
+from openai import OpenAI
 
+# --------------------- تنظیم کلاینت --------------------- #
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="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",
+    # api_key = "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", #zapas
 
-model = "qwen/qwen3-235b-a22b:free"  # محشرهههه
-# model = "openrouter/horizon-beta" # اینم عالیه
-# model = "deepseek/deepseek-r1-0528:free"
-# model = "z-ai/glm-4.5-air:free"
-# model = "google/gemma-3n-e4b-it:free"
-# model = "mistralai/mistral-7b-instruct"
-
-# model = "moonshotai/kimi-k2:free"
+)
 
 def rewrite_query_with_context(user_content, history, use_model=True):
     """
     سوال کاربر رو با توجه به تاریخچه گفتگو بازنویسی می‌کنه.
     
     - history: لیست پیام‌های قبلی گفتگو (مثل ["user: ...", "assistant: ..."])
-    - use_model: اگر True باشه بازنویسی با مدل LLM انجام می‌شه
+    - use_model: اگر True باشه بازنویسی با مدل انجام می‌شه
     """
     if not use_model:
         return user_content
@@ -49,20 +45,38 @@ def rewrite_query_with_context(user_content, history, use_model=True):
 🔁 بازنویسی واضح:"""
 
     try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
+        completion = client.chat.completions.create(
+            model = "google/gemma-3n-e4b-it:free",  # مدل مورد نظر
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=100,
-            temperature=0.3
+            temperature=0.3,
         )
-        return response.choices[0].message.content.strip()
+        return completion.choices[0].message.content.strip()
     except Exception as e:
         print("⚠️ خطا در بازنویسی با مدل:", e)
-        return user_content  # fallback
+        return user_content  
+    
+    
 
+if __name__ == "__main__":
+    history = [
+        "user: تور کیش چه تاریخی هست؟",
+        "assistant: تاریخ رفت تور کیش 10-08-1404 ساعت 12 است",
+    ]
 
+    user_question = "خدماتش چیه؟ از چه جاهاییش بازدید میکنیم؟"
 
+    result = rewrite_query_with_context(user_question, history, use_model=True)
+    
+    print("✅ خروجی بازنویسی:")
+    print(result)
+    
+# ✅ خروجی بازنویسی:
+# خدمات ارائه شده در تور کیش چیست و در این تور از چه مکان‌هایی بازدید خواهیم کرد؟
 
+    
 # from transformers import AutoModelForCausalLM, AutoTokenizer
 # import torch
 

@@ -1,8 +1,12 @@
-from ..models import Chunk
+# tours/utils/chunker.py
+
+from ..models import Chunk ,FAQ, FAQChunk
+
+def format_price(price):
+    return f"{price:,} تومان"
 
 def create_and_save_chunks(instance):
 
-    # اول همه چانک‌های قبلی رو پاک کن تا بروز بشه
     Chunk.objects.filter(tour=instance).delete()
 
     tour = instance
@@ -12,8 +16,9 @@ def create_and_save_chunks(instance):
     
     # --- اطلاعات کلی ---
     general_text = (
-        f"{combined_name} یک تور {tour.duration_days} روزه به مقصد {tour.destination} است "
-        f"که با قیمت {tour.price} تومان ارائه می‌شود. "
+        f"{combined_name} یک تور {tour.duration_days} روزه به مقصد {tour.destination}  است "
+        f"صفحه ی مربط به این تور <a href='http://localhost:5173/tours/{tour.tour_id}'>{combined_name}</a>"
+        f"که با قیمت {format_price(tour.price)}  ارائه می‌شود. "
         f"پرواز رفت در تاریخ {tour.departure.date_jalali.strftime('%d-%m-%Y')} ساعت {tour.departure.time} توسط ایرلاین  "
         f"{tour.departure.airline} انجام می‌شود و بازگشت در تاریخ {tour.return_info.date_jalali.strftime('%d-%m-%Y')} "
         f"ساعت {tour.return_info.time} توسط ایرلاین {tour.return_info.airline} خواهد بود. "
@@ -48,4 +53,12 @@ def create_and_save_chunks(instance):
 
     return chunks
 
+def create_faq_chunks():
+
+    chunks = []
+    for faq in FAQ.objects.all():
+        combined_text = f"سوال: {faq.question}\nپاسخ: {faq.answer}"
+        chunk = FAQChunk.objects.create(faq=faq, text=combined_text)
+        chunks.append(chunk)
+    return chunks
 

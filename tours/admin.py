@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk , ChunkEmbedding , ChatMessage , ChatSession
+from .models import Tour, Hotel, FlightInfo, Service, ItineraryItem, Image , Chunk , ChunkEmbedding , ChatMessage , ChatSession , FAQ , FAQChunk , FAQChunkEmbedding
 import jdatetime
 
 
@@ -119,3 +119,78 @@ class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('session', 'role', 'content', 'created_at')
     list_filter = ('role',)
     search_fields = ('content',)  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+# tours/admin.py
+from django.contrib import admin
+from .models import FAQ, FAQChunk, FAQChunkEmbedding
+
+# ----------------------------
+# Inline برای نمایش چانک‌های FAQ در خود FAQ
+# ----------------------------
+class FAQChunkInline(admin.TabularInline):
+    model = FAQChunk
+    extra = 0  # بدون چانک خالی اضافی
+    readonly_fields = ("chunk_type", "text")  # فقط خواندنی، چون معمولاً خودکار ساخته می‌شوند
+    can_delete = True
+
+# ----------------------------
+# Inline برای نمایش embedding هر چانک (خواندنی)
+# ----------------------------
+class FAQChunkEmbeddingInline(admin.TabularInline):
+    model = FAQChunkEmbedding
+    readonly_fields = ("vector",)
+    can_delete = False
+    extra = 0
+
+# ----------------------------
+# Admin FAQChunk
+# ----------------------------
+@admin.register(FAQChunk)
+class FAQChunkAdmin(admin.ModelAdmin):
+    list_display = ("faq", "chunk_type", "text_short")
+    list_filter = ("chunk_type",)
+    search_fields = ("text", "faq__question")
+
+    inlines = [FAQChunkEmbeddingInline]
+
+    def text_short(self, obj):
+        return obj.text[:50] + "..." if len(obj.text) > 50 else obj.text
+    text_short.short_description = "متن چانک"
+
+# ----------------------------
+# Admin FAQ
+# ----------------------------
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ("question", "answer_short", "created_at", "updated_at")
+    search_fields = ("question", "answer")
+    inlines = [FAQChunkInline]
+
+    def answer_short(self, obj):
+        return obj.answer[:50] + "..." if len(obj.answer) > 50 else obj.answer
+    answer_short.short_description = "جواب کوتاه"
+
+# ----------------------------
+# Admin FAQChunkEmbedding (خواندنی)
+# ----------------------------
+@admin.register(FAQChunkEmbedding)
+class FAQChunkEmbeddingAdmin(admin.ModelAdmin):
+    list_display = ("chunk", "vector_size")
+    readonly_fields = ("vector",)
+
+    def vector_size(self, obj):
+        import numpy as np
+        if obj.vector:
+            arr = np.frombuffer(obj.vector, dtype=np.float32)
+            return arr.shape[0]
+        return 0
+    vector_size.short_description = "ابعاد وکتور"    

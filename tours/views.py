@@ -101,7 +101,7 @@ class FilteredTourListAPIView(APIView):
     def get(self, request):
         destination_type = request.GET.get("destination_type")
         destination = request.GET.get("destination")
-        departure_date = request.GET.get("departure_date")
+        departure_date = request.GET.get("departure_date") or request.GET.get("startDate")
         return_date = request.GET.get("return_date")
         nights = request.GET.get("nights")
 
@@ -127,7 +127,7 @@ class FilteredTourListAPIView(APIView):
                 pass  # نادیده بگیر اگه عدد نبود
 
         serializer = TourSerializer(tours, many=True)
-        print(serializer.data)
+        # print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)    
     
     

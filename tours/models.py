@@ -132,6 +132,21 @@ def validate_images(value):
     if not isinstance(value, list) or not all(isinstance(i, str) for i in value):
         raise ValidationError("images باید لیستی از URLها باشه.")
 
+# --------------------------------
+
+class FAQ(models.Model):
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.question
+
+# --------------------------------
 
 class Chunk(models.Model):
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="chunks")
@@ -144,6 +159,17 @@ class ChunkEmbedding(models.Model):
     vector = models.BinaryField()  # ذخیره‌سازی باینری numpy (faiss-compatible)
 
 
+class FAQChunk(models.Model):
+    faq = models.ForeignKey(FAQ, on_delete=models.CASCADE, related_name="chunks")
+    chunk_type = models.CharField(max_length=50, default="faq")
+    text = models.TextField()
+
+
+class FAQChunkEmbedding(models.Model):
+    chunk = models.OneToOneField(FAQChunk, on_delete=models.CASCADE, related_name="embedding")
+    vector = models.BinaryField()
+    
+    
 #--------------------------- ChatBot
 class ChatSession(models.Model):
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
@@ -168,47 +194,3 @@ class ChatMessage(models.Model):
         return f"[{self.role}] {self.content[:30]}"
 
 
-
-# class TourChunk(models.Model):
-#     tour = models.ForeignKey("Tour", on_delete=models.CASCADE, related_name="chunks")
-#     chunk_type = models.CharField(max_length=50)
-#     text = models.TextField()
-
-#     def __str__(self):
-#         return f"{self.tour.name} - {self.chunk_type}"
-    
-    
-
-# # ======== مدل Tour ======== #
-# class Tour2(models.Model):
-#     tour_id = models.CharField(max_length=50, unique=True)
-#     name = models.CharField(max_length=200)
-#     destination = models.CharField(max_length=100)
-#     destination_type = models.CharField(
-#         max_length=50,
-#         null=True,
-#         blank=True,
-#         choices=[("داخلی", "داخلی"), ("خارجی", "خارجی")]
-#     )
-#     duration_days = models.PositiveSmallIntegerField()
-#     price = models.PositiveIntegerField()
-
-#     # JSON fields
-#     departure = models.JSONField(validators=[validate_departure])
-#     return_info = models.JSONField(validators=[validate_return])
-#     hotel = models.JSONField(validators=[validate_hotel])
-#     services = models.JSONField(validators=[validate_services], default=list)
-#     itinerary = models.JSONField(validators=[validate_itinerary], default=list)
-#     images = models.JSONField(validators=[validate_images], default=list)
-
-#     insurance_included = models.BooleanField(default=False)
-#     rich_text = models.TextField(blank=True)
-
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     class Meta:
-#         ordering = ["-created_at"]
-
-#     def __str__(self):
-#         return f"{self.name} ({self.tour_id})"
